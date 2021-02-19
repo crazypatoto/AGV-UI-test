@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace AGV
+namespace AGV_UI
 {
     static class Program
     {

@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{2C98C2DC-FCD6-470B-9D45-5CA248528CBF}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>AGV</RootNamespace>
-    <AssemblyName>AGV</AssemblyName>
+    <RootNamespace>AGV_UI</RootNamespace>
+    <AssemblyName>AGV_UI</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

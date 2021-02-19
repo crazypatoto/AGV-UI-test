@@ -13,7 +13,7 @@ using System.Net.Sockets;
 using System.IO;
 using System.Threading;
 
-namespace AGV
+namespace AGV_UI
 {
 
     public partial class Form1 : Form
@@ -22,14 +22,7 @@ namespace AGV
         List<QRCode> Route = new List<QRCode>();
         Int32 OriginOffset_X = 400;
         Int32 OriginOffset_Y = 400;
-        float positionScale = 0.1f;
-        TcpListener serverTcpListener = null;
-        TcpClient tcpClient;
-        BinaryWriter binaryWriter;
-        Int16 odmX = 0;
-        Int16 odmY = 0;
-        Int16 odmAngle = 0;
-        bool isRunning = false;
+        float positionScale = 0.1f;       
 
         AGVHandler AGVhandler;
         int pickedAGVIndex = -1;
@@ -42,26 +35,18 @@ namespace AGV
             InitializeComponent();
         }
         private void Form1_Load(object sender, EventArgs e)
-        {
-            listView1.View = View.Details;
-            listView1.GridLines = true;
-            listView1.FullRowSelect = true;
-            listView1.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
-
+        {          
             listView_AGV.View = View.Details;
             listView_AGV.GridLines = true;
             listView_AGV.FullRowSelect = true;
-            //listView_AGV.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
-
-            //Thread t = new Thread(() => { AGVConnect(); });
-            //t.IsBackground = true;
-            //t.Start();
+          
 
             TcpListener serverTcpListener = new TcpListener(IPAddress.Any, 6666);
             AGVhandler = new AGVHandler(serverTcpListener);
 
             panel1.Enabled = true;
 
+            serverTcpListener.Start();
             Thread t = new Thread(() =>
             {
                 while (true)
@@ -95,125 +80,15 @@ namespace AGV
             }
 
             return null;
-        }
-
-        private void AGVConnect()
-        {
-            BinaryReader binaryReader;
-            try
-            {
-                serverTcpListener = new TcpListener(IPAddress.Any, 6666);
-                Console.WriteLine($"Starting TCP Server with port {6666}");
-                serverTcpListener.Start();
-                tcpClient = serverTcpListener.AcceptTcpClient();
-                serverTcpListener.Stop();
-                var hostname = GetHostName(((IPEndPoint)tcpClient.Client.RemoteEndPoint).Address.ToString());
-                this.Invoke(new MethodInvoker(() =>
-                {
-                    this.Text += " - ";
-                    this.Text += hostname;
-                }));
-                binaryReader = new BinaryReader(tcpClient.GetStream());
-                binaryWriter = new BinaryWriter(tcpClient.GetStream());
-                this.Invoke(new MethodInvoker(() =>
-                {
-                    panel1.Enabled = true;
-                }));
-
-                Thread t = new Thread(() =>
-                {
-                    while (true)
-                    {
-                        if (tcpClient.Connected)
-                        {
-                            try
-                            {
-                                odmX = binaryReader.ReadInt16();
-                                odmY = binaryReader.ReadInt16();
-                                odmAngle = binaryReader.ReadInt16();
-
-                                Console.WriteLine($"X = {odmX}, Y = {odmY}, Angle = {odmAngle}");
-
-                                if (isRunning)
-                                {
-                                    if (Route.Count > 1)
-                                    {
-                                        QRCode qr = Route[1];
-                                        if (new Rectangle((int)(qr.X * positionScale + OriginOffset_X - 15), (int)(-qr.Y * positionScale + OriginOffset_Y - 15), 30, 30).Contains((int)(odmX * positionScale + OriginOffset_X), (int)(-odmY * positionScale + OriginOffset_Y)))
-                                        {
-                                            Route.RemoveAt(0);
-                                            this.Invoke(new MethodInvoker(() =>
-                                            {
-                                                listView1.Items.RemoveAt(0);
-                                            }));
-
-                                        }
-                                    }
-                                    else
-                                    {
-                                        QRCode qr = Route[0];
-                                        if (new Rectangle((int)(qr.X * positionScale + OriginOffset_X - 15), (int)(-qr.Y * positionScale + OriginOffset_Y - 15), 30, 30).Contains((int)(odmX * positionScale + OriginOffset_X), (int)(-odmY * positionScale + OriginOffset_Y)))
-                                        {
-                                            Route.RemoveAt(0);
-                                            this.Invoke(new MethodInvoker(() =>
-                                            {
-                                                listView1.Items.RemoveAt(0);
-                                                button_Send.Enabled = true;
-                                            }));
-
-                                        }
-                                        isRunning = false;
-                                    }
-
-                                }
-
-                                pictureBox.Invalidate();
-                            }
-                            catch (Exception)
-                            {
-
-                            }
-                        }
-                        else
-                        {
-                            Environment.Exit(0);
-                        }
-
-                    }
-                });
-                t.IsBackground = true;
-                t.Start();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-                Environment.Exit(-1);
-            }
-        }
+        }       
 
         private void pictureBox_Paint(object sender, PaintEventArgs e)
         {
-            drawQR(e.Graphics);
-            drawRoute(e.Graphics);
-            //drawAGV(e.Graphics);
+            drawQR(e.Graphics);                        
             drawAGVs(e.Graphics);
             drawAGVRoutes(e.Graphics);
         }
-
-        private void updateListView()
-        {
-            int count = 1;
-            listView1.Items.Clear();
-            foreach (QRCode qr in Route)
-            {
-                ListViewItem lvitem = new ListViewItem(count++.ToString());
-                lvitem.SubItems.Add(qr.TagNum.ToString());
-                lvitem.SubItems.Add(qr.X.ToString());
-                lvitem.SubItems.Add(qr.Y.ToString());
-                listView1.Items.Add(lvitem);
-            }
-            listView1.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
-        }
+       
 
         private void drawQR(Graphics g)
         {
@@ -241,23 +116,7 @@ namespace AGV
 
             }
 
-        }
-        private void drawAGV(Graphics g)
-        {
-            Pen p = new Pen(Color.Red, 3);
-            Pen p2 = new Pen(Color.Red, 3);
-            p2.EndCap = LineCap.RoundAnchor;
-            p2.EndCap = LineCap.ArrowAnchor;
-
-            float x = (odmX * positionScale) + OriginOffset_X;
-            float y = (-odmY * positionScale) + OriginOffset_Y;
-
-            if (QRCodes.Count > 0)
-            {
-                g.DrawEllipse(p, x - 30, y - 30, 60, 60);
-                g.DrawLine(p2, x, y, (float)(x + Math.Cos(odmAngle / 180.0 * Math.PI) * 60.0f), (float)(y - Math.Sin(odmAngle / 180.0 * Math.PI) * 60.0f));
-            }
-        }
+        }      
 
         private void drawAGVs(Graphics g)
         {
@@ -279,19 +138,7 @@ namespace AGV
             }
 
         }
-
-        private void drawRoute(Graphics g)
-        {
-            Pen p = new Pen(Color.Green, 5);
-            p.EndCap = LineCap.RoundAnchor;
-            p.EndCap = LineCap.ArrowAnchor;
-
-            for (int i = 0; i < Route.Count - 1; i++)
-            {
-                g.DrawLine(p, Route[i].X * positionScale + OriginOffset_X, -Route[i].Y * positionScale + OriginOffset_Y, Route[i + 1].X * positionScale + OriginOffset_X, -Route[i + 1].Y * positionScale + OriginOffset_Y);
-            }
-        }
-
+       
         private void drawAGVRoutes(Graphics g)
         {
             foreach (var agv in AGVhandler.AGVList)
@@ -340,7 +187,10 @@ namespace AGV
                             if (pickedAGVIndex >= 0)
                             {
                                 pickedQR = qr;
-                                AGVhandler.AGVList[pickedAGVIndex].Route.Add(qr);
+                                if (!AGVhandler.AGVList[pickedAGVIndex].isRunning)
+                                {
+                                    AGVhandler.AGVList[pickedAGVIndex].Route.Add(qr);
+                                }                                
                             }
                             //Route.Add(qr);
                         }
@@ -352,7 +202,10 @@ namespace AGV
                         {
                             if (AGVhandler.AGVList[pickedAGVIndex].Route.Contains(qr))
                             {
-                                AGVhandler.AGVList[pickedAGVIndex].Route.RemoveAt(AGVhandler.AGVList[pickedAGVIndex].Route.FindLastIndex((QRCode _qr) => { return _qr.TagNum == qr.TagNum; }));
+                                if (!AGVhandler.AGVList[pickedAGVIndex].isRunning)
+                                {
+                                    AGVhandler.AGVList[pickedAGVIndex].Route.RemoveAt(AGVhandler.AGVList[pickedAGVIndex].Route.FindLastIndex((QRCode _qr) => { return _qr.TagNum == qr.TagNum; }));
+                                }
                                 //Route.RemoveAt(Route.FindLastIndex((QRCode _qr) => { return _qr.TagNum == qr.TagNum; }));
                             }
                         }
@@ -360,32 +213,20 @@ namespace AGV
                     break;
                 }
             }
-            pictureBox.Invalidate();
-            updateListView();
+            pictureBox.Invalidate();           
         }
 
         private void button_Send_Click(object sender, EventArgs e)
-        {
-            //string str = "";
-
-            //if (Route.Count > 0)
-            //{
-            //    str += $"{Route[0].TagNum},{Route[0].X},{Route[0].Y}";
-            //}
-            //for (int i = 1; i < Route.Count; i++)
-            //{
-            //    str += $";{Route[i].TagNum},{Route[i].X},{Route[i].Y}";
-            //}
-            ////MessageBox.Show(str);
-            //binaryWriter.Write(Encoding.UTF8.GetBytes(str));
-            //isRunning = true;
-            //button_Send.Enabled = false;
+        {           
 
             if (pickedAGVIndex >= 0)
             {
-                pickedQR = null;                
-                AGVhandler.AGVList[pickedAGVIndex].sendRoute();
-                pickedAGVIndex = -1;
+                if (!AGVhandler.AGVList[pickedAGVIndex].isRunning)
+                {
+                    pickedQR = null;
+                    AGVhandler.AGVList[pickedAGVIndex].sendRoute();
+                    pickedAGVIndex = -1;
+                }
             }
         }
 
@@ -393,14 +234,14 @@ namespace AGV
         {
             if(pickedAGVIndex >= 0)
             {
-                AGVhandler.AGVList[pickedAGVIndex].Route.Clear();
+                if (!AGVhandler.AGVList[pickedAGVIndex].isRunning)
+                {
+                    pickedQR = null;
+                    AGVhandler.AGVList[pickedAGVIndex].Route.Clear();
+                }
             }            
         }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            pictureBox.Invalidate();
-        }
+      
 
         private void timer_Tick(object sender, EventArgs e)
         {
@@ -444,10 +285,35 @@ namespace AGV
         {
             pickedQR = null;
             if (listView_AGV.SelectedItems.Count > 0)
-            {
+            {                
                 pickedAGVIndex = listView_AGV.SelectedItems[0].Index;
             }
 
+        }
+
+        private void button_sendAll_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i < AGVhandler.AGVList.Count; i++)
+            {
+                if (!AGVhandler.AGVList[i].isRunning)
+                {
+                    pickedQR = null;
+                    AGVhandler.AGVList[i].sendRoute();
+                    pickedAGVIndex = -1;
+                }
+            }
+        }
+
+        private void button_clearAll_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i < AGVhandler.AGVList.Count; i++)
+            {
+                if (!AGVhandler.AGVList[i].isRunning)
+                {
+                    pickedQR = null;
+                    AGVhandler.AGVList[i].Route.Clear();
+                }
+            }           
         }
     }
 
@@ -469,11 +335,10 @@ namespace AGV
 
             lock (this)
             {
-                Console.WriteLine("Accepting new client!!");
-                tcpListener.Start();
-                tcpListener.Start();
+                Console.WriteLine("Accepting new client!!");                
+                //tcpListener.Start();
                 client = tcpListener.AcceptTcpClient();
-                tcpListener.Stop();
+                //tcpListener.Stop();
             }
 
             AGV agv = new AGV(
@@ -621,18 +486,19 @@ namespace AGV
             if (Route.Count > 0)
             {
                 str += $"{Route[0].TagNum},{Route[0].X},{Route[0].Y}";
-            }
-            for (int i = 1; i < Route.Count; i++)
-            {
-                str += $";{Route[i].TagNum},{Route[i].X},{Route[i].Y}";
-            }
+                for (int i = 1; i < Route.Count; i++)
+                {
+                    str += $";{Route[i].TagNum},{Route[i].X},{Route[i].Y}";
+                }
+                clientBinaryWriter.Write(Encoding.UTF8.GetBytes(str));
+                isRunning = true;
+            }          
             //MessageBox.Show(str);
-            clientBinaryWriter.Write(Encoding.UTF8.GetBytes(str));
-            isRunning = true;
+           
         }
     }
 
-    class ListViewNF : System.Windows.Forms.ListView
+    public class ListViewNF : System.Windows.Forms.ListView
     {
         public ListViewNF()
         {
