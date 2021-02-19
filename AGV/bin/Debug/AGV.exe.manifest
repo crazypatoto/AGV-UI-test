@@ -42,14 +42,14 @@
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="AGV.exe" size="19416">
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="AGV.exe" size="26584">
       <assemblyIdentity name="AGV" version="1.0.0.0" language="neutral" processorArchitecture="msil" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>sWjXVSGjXqD22gS8IXQK8kByuruAxGnU/duU7ysVjNw=</dsig:DigestValue>
+        <dsig:DigestValue>m74dKHc+J4GgmMxjnZUtBJ1s+2Zd2vDCeCox4H2Z/RQ=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
